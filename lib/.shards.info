@@ -1,0 +1,15 @@
+---
+version: 1.0
+shards:
+  db:
+    git: https://github.com/crystal-lang/crystal-db.git
+    version: 0.13.1
+  mysql:
+    git: https://github.com/crystal-lang/crystal-mysql.git
+    version: 0.16.0
+  dotenv:
+    git: https://github.com/drum445/dotenv.git
+    version: 0.5.0
+  crystal_ssh:
+    git: https://github.com/bararchy/crystal_ssh.git
+    version: 0.1.0+git.commit.0bcb56fd60e00c4447cfc37baa41930968373baa
