@@ -33,7 +33,7 @@ end
 exit if bindPorts.empty?
 
 cpot = CPot.new bindPorts
-spawn cpot.run  
+spawn cpot.run
 
 puts "[honeypot] Starting TCP Honeypot on ports: #{bindPorts.to_s}"
 sleep

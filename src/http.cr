@@ -7,19 +7,29 @@ require "./honeypot"
 require "./telegram"
 require "./abuseipdb"
 require "./detection"
+require "./dork_generator"
+require "./circular_array"
 
 class Honeypot::Http
   include Honeypot
 
   getter port : Int32
 
+  # Create a new HTTP Honeypot on *port*
   def initialize(@port)
     @notifier = Telegram.new
-    @reporter = AbuseIPDB.new 
+    @reporter = AbuseIPDB.new
+    @generator = DorkerGenerator.new
+    @seen = CircularArray(String).new
+
+    {% if flag?(:report_telegram) %}
+      @notifier.load_tokens
+    {% end %}
+
     @server = HTTP::Server.new do |ctx| 
       ctx.response.content_type = "text/html"
       ctx.response.print "<title>CPoT</title>"
-      ctx.response.print "<h1><b>Welcome to CPoT</b></h1>"
+      ctx.response.print "<h1><b>Welcome to <a href=https://github.com/unullable/cpot>CPoT</a></b></h1>"
       ctx.response.print "<p>A Low Interaction Honeypot In CRYSTAL.</p>"
 
       bodyStr = ctx.request.body.try &.gets_to_end
@@ -33,21 +43,46 @@ class Honeypot::Http
 
           # check if its an http proxy scanner
           if is_proxy_scanner(ctx.request)
-            @notifier.send_notification("Honeypot Alert: Detected proxy scanner #{ip} on port #{@port}\n\n🌍 Attacker Info:\n#{ip_info(addr.to_s)}")
+            {% if flag?(:report_telegram) %}
+              if @seen.find(ip).nil?
+                @notifier.send_notification("\
+                  <b>Honeypot Alert: Detected proxy scanner #{ip} on port #{@port}</b> /n \
+                  🌍 Attacker Info:\n#{ip_info(ip)}"
+                )
+                @seen.add(ip)
+              end
+            {% end %}
 
             {% if flag?(:report_abuse) %}
-              @reporter.report(format_ip(addr.to_s), "Open Proxy Scanner (port:#{@port})")
+              if @seen.find(ip).nil?
+                @reporter.report(ip, "Open Proxy Scanner (port:#{@port})")
+                @seen.add(ip)
+              end
             {% end %}
             next
           end
           
-          # judge request 
           msg = is_malicious(ctx.request)
           unless msg.empty?
-            # send telegram notification
-            @notifier.send_notification("Honeypot Alert: Detected BoT #{@notifier.safe_ip(ip)}. To see abuse info/reports go to: #{@notifier.abuselink(ip)}\n\n🌍 Attacker Info:\n#{ip_info(addr.to_s)}\n👨🏻‍💻 Details:\n #{msg} ")
+            if msg.includes?("Accessed")
+              msg += '\n'
+              @generator.get(ctx.request.path + " exploit").each do |dork|
+                  msg += "InfoDork: " + dork + '\n'
+              end
+            end
 
-            # report to abuseipdb
+            {% if flag?(:report_telegram) %}
+              unless @seen.find(ip)
+                @notifier.send_notification("\
+                  <b>Honeypot Alert: Detected BoT #{@notifier.safe_ip(ip)}</b>.\n \
+                  To see abuse info/reports go to: #{@notifier.abuselink(ip)} \n\n \
+                  🌍 Attacker Info:\n#{ip_info(addr.to_s)} \n \
+                  👨🏻‍💻 Details:\n #{msg}"
+                )
+                @seen.add(ip)
+              end
+            {% end %}
+
             {% if flag?(:report_abuse) %}
               @reporter.report(ip, "CPoT triggered at tcp/#{@port}.\nDetails:\n#{msg}")
             {% end %}
@@ -82,10 +117,11 @@ class Honeypot::Http
       endpoint: req.path,
       headers: req.headers.to_h,
       body: body || "None"
-    }.to_json
+    }.to_pretty_json()
     end
   end
 
+  # :nodoc:
   def worker
     begin
       address = @server.bind_tcp "::", @port

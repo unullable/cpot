@@ -1,13 +1,11 @@
 require "http"
 require "./honeypot"
 
-# detect exploitation/enumeration attempts
+# Detect exploitation/enumeration attempts
 class Honeypot::Detection
     SAFE_PATHS = ["/", "/robots.txt", "/sitemap.xml", "/favicon.ico", "/index.html", "/wiki", "/.well-known/security.txt"]
-    
-    getter request : HTTP::Request 
 
-    def initialize(@request)
+    def initialize(@request : HTTP::Request)
       @comment = ""
       @known_bots = [
         "Mozi", "androxgh0st", "mirai", "qbot", "sora",
@@ -40,28 +38,30 @@ class Honeypot::Detection
       true
     end
     
-    private def check_loader(str : String) : String | Nil
+    private def check_loader(str : String) : String?
       @known_loaders.each { |ld| return ld if str.includes?(ld) }
       nil
     end
 
-    private def check_bot_name(str : String) : String | Nil
+    private def check_bot_name(str : String) : String?
       @known_bots.each { |botname| return botname if str.includes?(botname) }
       nil
     end
 
-    private def check_dropper(str : String) : String | Nil
+    private def check_dropper(str : String) : String?
       @known_droppers.each { |dropper| return dropper if str.includes?(dropper) }
       nil
     end
 
+    # :showdoc:
+    #
+    # Detect a loading attempt by performing checks on both body and path.
     private def detect_loader : Bool
       body = @request.body
       return false if body.nil?
 
       bodyStr = body.gets_to_end
 
-      # perform checks on both body and path
       if check_loader(bodyStr) || check_loader(@request.path)
         add_comment("detected loader attempt: #{bodyStr}")
         return true
@@ -75,7 +75,12 @@ class Honeypot::Detection
       false
     end
 
-    private def is_enumeration(path : String) : String | Nil
+    # :showdoc:
+    #
+    # Detect enumeration attempts
+    #
+    # NOTE: Based on path
+    private def is_enumeration(path : String) : String?
       enumdirs = {
         "/.aws/credentials"                           => "AWS",
         "/aws/.git/config"                            => "AWS",
@@ -98,6 +103,11 @@ class Honeypot::Detection
       return enumdirs[path]
     end
     
+    # :showdoc:
+    #
+    # Detect exploitation attempts
+    #
+    # NOTE: Based on path
     private def is_exploit(path : String) :  String | Nil
       sploitdirs = {
         "/ws/v1/cluster/apps/new-application"         => "Yarn Hadoop RCE", 
@@ -138,9 +148,15 @@ class Honeypot::Detection
       return sploitdirs[path]
     end
     
+    # :showdoc:
+    #
+    # Detect unusual user agents
     private def detect_ua : Bool
-      useragent = @request.headers["User-Agent"]
-      return false if useragent.nil?
+      useragent = begin
+                    @request.headers["User-Agent"]
+                  rescue
+                    return false
+                  end
       if  (useragent.starts_with?("Mozilla")  ||
           useragent.starts_with?("Opera")     ||
           useragent.starts_with?("Dalvik")    ||
@@ -152,6 +168,7 @@ class Honeypot::Detection
       true
     end
     
+    # Judge a request as good or bad
     def judge : String
       detect_path 
       detect_loader 

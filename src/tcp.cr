@@ -9,7 +9,7 @@ class Honeypot::TCP
 
   def initialize(@ports : Array(Int32))
     @telnet_ports = [23,2323,1023,10023,5358]
-    @http_ports   = [80,81,82,8080,8081,8082,8089,8181,8291,8889,9000,9009,9999]
+    @http_ports   = [80,81,82,8080,8081,8082,8088,8089,8181,8291,8889,9000,9009,9999]
     @ssh_ports    = [2020,2022,8022,2223,9922,222,2222,22222,24442,10001]
     @adb_ports    = [5555]
   end
@@ -33,6 +33,7 @@ class Honeypot::TCP
     end
   end
   
+  # :nodoc:
   def start
     @ports.each do |port| 
       spawn handle(port)
