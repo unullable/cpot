@@ -3,6 +3,8 @@ require "http/client"
 require "json"
 
 module Honeypot
+  CIRCULAR_ARRAY_SIZE = 100
+
   def print_err(msg)
     puts msg.colorize(:red)
   end

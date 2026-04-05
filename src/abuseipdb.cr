@@ -3,20 +3,20 @@ require "uri"
 require "dotenv"
 
 class Honeypot::AbuseIPDB
+  property reported : Int32
+
   def initialize
     @reported = 0
     @base = "https://api.abuseipdb.com/api/v2/report"
   end
-  
-  def get_reported
-    @reported
-  end
-  
+
+  # Load API key from .env
   def api_key
     ht = Dotenv.load
     ht["ABUSEIPDB_API_KEY"]
   end
   
+  # Create a report for *ip* with abuse reason *comment*
   def report(ip : String, comment : String)
     headers = HTTP::Headers.new
     headers["Key"] = api_key
