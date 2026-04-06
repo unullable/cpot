@@ -21,4 +21,4 @@ $ ./cpot --help
 ## Contributors
 
 - [unullable](https://github.com/unullable) - creator and maintainer
-- Kiphax
+- [Kiphax](https://github.com/Kiphax) - maintainer
