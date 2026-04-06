@@ -1,7 +1,6 @@
 # CPoT
 
-A low interaction honeypot coded in crystal. CPoT is capable of detecting telnet and http based attacks.
-Thanks to its detection module it can detect exploits previously seen in the wild, as well as enumeration attempts and report them via telegram.
+A low interaction and high perfomance honeypot coded in crystal. CPoT is capable of detecting telnet and http based attacks in real time. Equipped with a robust detection engine, it identifies known real-world exploits and enumeration patterns, delivering instant alerts directly to your Telegram.
 
 ## Installation
 
@@ -22,3 +21,4 @@ $ ./cpot --help
 ## Contributors
 
 - [unullable](https://github.com/unullable) - creator and maintainer
+- Kiphax
