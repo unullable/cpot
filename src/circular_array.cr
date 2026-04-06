@@ -1,14 +1,11 @@
 require "./honeypot"
 
-# A stack allocated circular array
-#
-# NOTE: Prevent reporting the same host multiple times in a row.
 class Honeypot::CircularArray(T)
   include Honeypot
 
   # Creates a new CircularArray with size *CIRCULAR_ARRAY_SIZE*
-  def initialize
-    @table = Array(T?).new(CIRCULAR_ARRAY_SIZE, nil)
+  def initialize(@size : Int32 = CIRCULAR_ARRAY_SIZE)
+    @table = Array(T?).new(@size, nil)
     @index = 0
   end
 
@@ -18,16 +15,16 @@ class Honeypot::CircularArray(T)
   def add(val : T)
     print_info "Adding value: #{val}"
     @table[@index] = val
-    @index = (@index + 1) % CIRCULAR_ARRAY_SIZE
+    @index = (@index + 1) % @size
   end
 
   # Find an element in table.
   #
-  # NOTE: Cost: O(CIRCULAR_ARRAY_SIZE)
+  # NOTE: Cost: O(@size)
   def find(val : T) : T?
     @table.each do |e|
       unless e.nil?
-        return e if e == val
+        return e if e === val
       end
     end
     nil

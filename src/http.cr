@@ -46,7 +46,7 @@ class Honeypot::Http
             {% if flag?(:report_telegram) %}
               if @seen.find(ip).nil?
                 @notifier.send_notification("\
-                  <b>Honeypot Alert: Detected proxy scanner #{ip} on port #{@port}</b> /n \
+                  <b>Honeypot Alert: Detected proxy scanner #{@notifier.safe_ip(ip)} on port #{@port}</b> /n \
                   🌍 Attacker Info:\n#{ip_info(ip)}"
                 )
                 @seen.add(ip)
@@ -55,7 +55,7 @@ class Honeypot::Http
 
             {% if flag?(:report_abuse) %}
               if @seen.find(ip).nil?
-                @reporter.report(ip, "Open Proxy Scanner (port:#{@port})")
+                @reporter.report(ip, "Open Proxy Scanner (port:#{@port})", [AbuseIPDB::Category::OPEN_PROXY])
                 @seen.add(ip)
               end
             {% end %}
@@ -72,7 +72,7 @@ class Honeypot::Http
             end
 
             {% if flag?(:report_telegram) %}
-              unless @seen.find(ip)
+              if @seen.find(ip).nil?
                 @notifier.send_notification("\
                   <b>Honeypot Alert: Detected BoT #{@notifier.safe_ip(ip)}</b>.\n \
                   To see abuse info/reports go to: #{@notifier.abuselink(ip)} \n\n \
@@ -84,7 +84,7 @@ class Honeypot::Http
             {% end %}
 
             {% if flag?(:report_abuse) %}
-              @reporter.report(ip, "CPoT triggered at tcp/#{@port}.\nDetails:\n#{msg}")
+              @reporter.report(ip, "CPoT triggered at tcp/#{@port}.\nDetails:\n#{msg}", [AbuseIPDB::Category::HACKING])
             {% end %}
           end
       end
