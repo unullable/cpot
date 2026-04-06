@@ -25,17 +25,15 @@ class Honeypot::Detection
       return false if SAFE_PATHS.includes?(path)
       if sploit = is_exploit(path)
         add_comment("Exploitation Attempt: #{sploit}")
-      elsif path.includes?(".git")
-        add_comment("Git Enumeration Attempt")
-      elsif path.includes?(".env")
-        add_comment("Environment Enumeration Attempt")
-      elsif path.includes?("wp-")
-        add_comment("WordPress Enumeration Attempt")
+        return true
       elsif enuminfo = is_enumeration(path)
         add_comment("Enumeration Attempt: #{enuminfo}")
+        return true
+      else
+        add_comment("Accessed: #{path}")
+        return true
       end
-      add_comment("Accessed: #{path}")
-      true
+      false
     end
     
     private def check_loader(str : String) : String?
@@ -81,6 +79,9 @@ class Honeypot::Detection
     #
     # NOTE: Based on path
     private def is_enumeration(path : String) : String?
+      return "Git Enumeration Attempt" if path.includes?(".git")
+      return ".Env Enumeration Attempt" if path.includes?(".env")
+      return "WordPress Enumeration Attempt" if path.includes?("wp-")
       enumdirs = {
         "/.aws/credentials"                           => "AWS",
         "/aws/.git/config"                            => "AWS",

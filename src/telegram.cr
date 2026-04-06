@@ -21,7 +21,7 @@ class Honeypot::Telegram
     ip.gsub('.', "[.]")
   end
 
-  # Get AbuseIPDB markdown for *ip*
+  # Get AbuseIPDB for *ip* formatted as HTML
   def abuselink(ip : String) : String
     "<a href=\"https://www.abuseipdb.com/check/#{ip}\">AbuseIPDB</a>"
   end

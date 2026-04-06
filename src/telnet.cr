@@ -3,6 +3,7 @@ require "./tcp"
 require "./logger"
 require "./honeypot"
 require "./telegram"
+require "./abuseipdb"
 
 class TelnetException < Exception
 end
@@ -22,7 +23,7 @@ class Honeypot::Telnet
   
   private def report(ip, msg)
     if ip != @last_reported_ip
-      @reporter.report(ip, msg)
+      @reporter.report(ip, msg, [AbuseIPDB::Category::BRUTE_FORCE])
       @last_reported_ip = ip
     end
   end
