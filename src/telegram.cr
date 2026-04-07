@@ -3,8 +3,9 @@ require "digest/sha256"
 require "colorize"
 require "json"
 require "dotenv"
+require "./notifier"
 
-class Honeypot::Telegram
+class Honeypot::Telegram < Honeypot::Notifier
   include Honeypot
   property bot_token  : String   = ""
   property chat_id    : String   = ""
@@ -14,16 +15,6 @@ class Honeypot::Telegram
   def initialize
     @url = "https://api.telegram.org/bot"
     @executed = Set(String).new
-  end
-
-  # :nodoc:
-  def safe_ip(ip : String) : String
-    ip.gsub('.', "[.]")
-  end
-
-  # Get AbuseIPDB for *ip* formatted as HTML
-  def abuselink(ip : String) : String
-    "<a href=\"https://www.abuseipdb.com/check/#{ip}\">AbuseIPDB</a>"
   end
 
   # Notify admin for *report*

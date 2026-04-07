@@ -20,7 +20,7 @@ class Honeypot::Http
     @notifier = Telegram.new
     @reporter = AbuseIPDB.new
     @generator = DorkerGenerator.new
-    @seen = CircularArray(String).new
+    @seen = CircularArray(String).new(100)
 
     {% if flag?(:report_telegram) %}
       @notifier.load_tokens
@@ -44,13 +44,10 @@ class Honeypot::Http
           # check if its an http proxy scanner
           if is_proxy_scanner(ctx.request)
             {% if flag?(:report_telegram) %}
-              if @seen.find(ip).nil?
-                @notifier.send_notification("\
-                  <b>Honeypot Alert: Detected proxy scanner #{@notifier.safe_ip(ip)} on port #{@port}</b> /n \
-                  🌍 Attacker Info:\n#{ip_info(ip)}"
-                )
-                @seen.add(ip)
-              end
+              @notifier.send_notification("\
+                <b>Honeypot Alert: Detected proxy scanner #{@notifier.safe_ip(ip)} on port #{@port}</b> /n \
+                🌍 Attacker Info:\n#{ip_info(ip)}"
+              )
             {% end %}
 
             {% if flag?(:report_abuse) %}
@@ -63,28 +60,31 @@ class Honeypot::Http
           end
           
           msg = is_malicious(ctx.request)
+          tmsg = msg
           unless msg.empty?
-            if msg.includes?("Accessed")
-              msg += '\n'
-              @generator.get(ctx.request.path + " exploit").each do |dork|
-                  msg += "InfoDork: " + dork + '\n'
-              end
-            end
-
             {% if flag?(:report_telegram) %}
-              if @seen.find(ip).nil?
-                @notifier.send_notification("\
-                  <b>Honeypot Alert: Detected BoT #{@notifier.safe_ip(ip)}</b>.\n \
-                  To see abuse info/reports go to: #{@notifier.abuselink(ip)} \n\n \
-                  🌍 Attacker Info:\n#{ip_info(addr.to_s)} \n \
-                  👨🏻‍💻 Details:\n #{msg}"
-                )
-                @seen.add(ip)
+              # Add dorks ONLY on notifications
+              if msg.includes?("Accessed")
+                tmsg += '\n'
+                @generator.get(ctx.request.path + " exploit").each do |dork|
+                  tmsg += "InfoDork: " + dork + '\n'
+                end
               end
+
+              @notifier.send_notification("\
+                <b>Honeypot Alert: Detected BoT #{@notifier.safe_ip(ip)}</b>.\n \
+                To see abuse info/reports go to: #{@notifier.abuselink(ip)} \n\n \
+                🌍 Attacker Info:\n#{ip_info(ip)} \n \
+                👨🏻‍💻 Details:\n #{tmsg}"
+              )
             {% end %}
 
             {% if flag?(:report_abuse) %}
-              @reporter.report(ip, "CPoT triggered at tcp/#{@port}.\nDetails:\n#{msg}", [AbuseIPDB::Category::HACKING])
+              if @seen.find(ip).nil?
+                @reporter.report(ip, "CPoT triggered at tcp/#{@port}.\
+                #{msg}", [AbuseIPDB::Category::HACKING])
+                @seen.add(ip)
+              end
             {% end %}
           end
       end
