@@ -8,4 +8,4 @@ honeypot-telegram:
   crystal build ./src/main.cr -o cpot -Dreport_telegram --progress
 
 honeypot-complete:
-  crystal build ./src/main.cr -o cpot -Dreport_telegram -Dreport_abuse --progress --release
+  crystal build ./src/main.cr -o cpot -Dreport_telegram -Dreport_abuse --progress

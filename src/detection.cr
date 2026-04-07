@@ -2,11 +2,15 @@ require "http"
 require "./honeypot"
 
 # Detect exploitation/enumeration attempts
+#
+# TODO: Score based detection
 class Honeypot::Detection
     SAFE_PATHS = ["/", "/robots.txt", "/sitemap.xml", "/favicon.ico", "/index.html", "/wiki", "/.well-known/security.txt"]
 
+    getter comment : String
+
     def initialize(@request : HTTP::Request)
-      @comment = ""
+      @comment = String.new
       @known_bots = [
         "Mozi", "androxgh0st", "mirai", "qbot", "sora",
         "arm", "mips", "mipsel", "mpsl", "x86", 
@@ -60,14 +64,14 @@ class Honeypot::Detection
 
       bodyStr = body.gets_to_end
 
-      if check_loader(bodyStr) || check_loader(@request.path)
-        add_comment("detected loader attempt: #{bodyStr}")
+      if loader = check_loader(bodyStr) || check_loader(@request.path)
+        add_comment("Detected loader attempt: #{loader}")
         return true
       else
         if dropper = check_dropper(bodyStr) || check_dropper(@request.path)
-          add_comment("detected dropper attempt: #{dropper}")
+          add_comment("Detected dropper attempt: #{dropper}")
         elsif botname = check_bot_name(bodyStr) || check_bot_name(@request.path)
-          add_comment("detected known bot: #{botname}")
+          add_comment("Detected known bot: #{botname}")
         end
       end
       false
@@ -79,9 +83,9 @@ class Honeypot::Detection
     #
     # NOTE: Based on path
     private def is_enumeration(path : String) : String?
-      return "Git Enumeration Attempt" if path.includes?(".git")
-      return ".Env Enumeration Attempt" if path.includes?(".env")
-      return "WordPress Enumeration Attempt" if path.includes?("wp-")
+      return "Git" if path.includes?(".git")
+      return ".Env" if path.includes?(".env")
+      return "WordPress" if path.includes?("wp-")
       enumdirs = {
         "/.aws/credentials"                           => "AWS",
         "/aws/.git/config"                            => "AWS",
@@ -109,7 +113,8 @@ class Honeypot::Detection
     # Detect exploitation attempts
     #
     # NOTE: Based on path
-    private def is_exploit(path : String) :  String | Nil
+    # TODO: Load those from a file instead of hardcoding em
+    private def is_exploit(path : String) :  String?
       sploitdirs = {
         "/ws/v1/cluster/apps/new-application"         => "Yarn Hadoop RCE", 
         "/tmUnblock.cgi"                              => "Linksys WRT120N CVE-2025-34037",
@@ -143,7 +148,11 @@ class Honeypot::Detection
         "/actuator/gateway/routes"                    => "Spring Cloud Gateway Actuator Code Injection CVE-2022-22947",
         "/_ignition/execute-solution"                 => "Laravel v8.30.0 (PHP v7.3.25) debug RCE",
         "/login.rsp"                                  => "getDVR (CVE-2018-9995)",
-        "/developmentserver/metadatauploader"         => "SAP NetWeaver Visual Composer Metadata Uploader CVE-2025-31324"
+        "/developmentserver/metadatauploader"         => "SAP NetWeaver Visual Composer Metadata Uploader CVE-2025-31324",
+        "/SDK/webLanguage"                            => "Hikvision Web Server Build 210702 - Command Injection",
+        "/openam/ui/PWResetUserValidation"            => "LDAP Injection In OpenAM (CVE-2021-29156)",
+        "/laravel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php" => "PHP Unit 4.8.28 - Remote Code Execution (RCE) (Unauthenticated) (CVE-2017-9841)",
+        "/containers/json" => "DOCKER Misconfiguration (exec)"
       }
       return unless sploitdirs.has_key?(path)
       return sploitdirs[path]
@@ -174,6 +183,6 @@ class Honeypot::Detection
       detect_path 
       detect_loader 
       detect_ua
-      @comment
+      comment
     end
 end

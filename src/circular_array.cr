@@ -1,5 +1,7 @@
 require "./honeypot"
 
+# A cache that contains recently reported IPv4 addresses
+# implemented as a circular array.
 class Honeypot::CircularArray(T)
   include Honeypot
 

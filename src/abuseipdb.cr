@@ -3,6 +3,8 @@ require "uri"
 require "dotenv"
 
 class Honeypot::AbuseIPDB
+  include Honeypot
+
   getter reported : Int32
 
   def initialize
@@ -12,13 +14,11 @@ class Honeypot::AbuseIPDB
 
   # Load API key from .env
   def api_key
-    ht = Dotenv.load
-    ht["ABUSEIPDB_API_KEY"]
+    env = Dotenv.load
+    env["ABUSEIPDB_API_KEY"]
   end
   
   # Create a report for *ip* with abuse reason *comment*
-  #
-  # TODO: Pass categories in params instead of hardcoding em
   def report(ip : String, comment : String, categories : Array(Category))
     headers = HTTP::Headers.new
     headers["Key"] = api_key
