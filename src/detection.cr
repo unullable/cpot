@@ -6,6 +6,10 @@ require "./honeypot"
 # TODO: Score based detection
 class Honeypot::Detection
     SAFE_PATHS = ["/", "/robots.txt", "/sitemap.xml", "/favicon.ico", "/index.html", "/wiki", "/.well-known/security.txt"]
+    SAFE_UAS = [
+      "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity",
+      "visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36",
+    ]
 
     getter comment : String
 
@@ -147,7 +151,9 @@ class Honeypot::Detection
         "/action.php"                                 => "Electric Smart",
         "/actuator/gateway/routes"                    => "Spring Cloud Gateway Actuator Code Injection CVE-2022-22947",
         "/_ignition/execute-solution"                 => "Laravel v8.30.0 (PHP v7.3.25) debug RCE",
+        "/_ignition/health-check"                     => "Laravel Debug Mode", #does this have CVE number?
         "/login.rsp"                                  => "getDVR (CVE-2018-9995)",
+        "/login.cgi"                                  => "Community Link Pro RCE",
         "/developmentserver/metadatauploader"         => "SAP NetWeaver Visual Composer Metadata Uploader CVE-2025-31324",
         "/SDK/webLanguage"                            => "Hikvision Web Server Build 210702 - Command Injection",
         "/openam/ui/PWResetUserValidation"            => "LDAP Injection In OpenAM (CVE-2021-29156)",
@@ -167,6 +173,7 @@ class Honeypot::Detection
                   rescue
                     return false
                   end
+      return false if SAFE_UAS.includes?(useragent)
       if  (useragent.starts_with?("Mozilla")  ||
           useragent.starts_with?("Opera")     ||
           useragent.starts_with?("Dalvik")    ||
