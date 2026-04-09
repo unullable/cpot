@@ -21,7 +21,7 @@ class Honeypot::TCP
       spawn tel.worker
     elsif @http_ports.includes?(port)
       # HTTP honeypot 
-      http = Http.new port
+      http = Http.new port.to_u16
       spawn http.worker
     # Other honeypots
     elsif @ssh_ports.includes?(port)
